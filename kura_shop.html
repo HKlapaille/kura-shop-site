@@ -1,0 +1,673 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>KURA SHOP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+/*
+  KURA SHOP — Telegram Mini App storefront
+  Layout concept: single-column, mobile-first terminal window — sticky
+  boot-style header, scrollable product grid, slide-in detail/cart drawers,
+  everything framed like a shell session rather than a conventional store.
+*/
+:root{
+  --bg:#0a0a0c;
+  --surface:#141417;
+  --surface-2:#1c1c20;
+  --border:#2a2a2f;
+  --fg:#eceef0;
+  --fg-dim:#8d8d96;
+  --accent:#00ff8c;
+  --accent-dim:#0b3d27;
+  --danger:#ff3b5c;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:'IBM Plex Sans',-apple-system,sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  position:relative;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";
+  position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px);
+  z-index:30; background:var(--bg);
+}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;}
+.tabular{font-variant-numeric:tabular-nums;}
+
+/* faint scanline + grain texture over the whole app */
+.scanlines{
+  position:fixed; inset:0; pointer-events:none; z-index:40; opacity:.5;
+  background:repeating-linear-gradient(0deg, rgba(255,255,255,.028) 0px, rgba(255,255,255,.028) 1px, transparent 1px, transparent 3px);
+  mix-blend-mode:overlay;
+}
+.grain{
+  position:fixed; inset:0; pointer-events:none; z-index:41; opacity:.05;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+a{color:inherit;}
+button{font-family:inherit; cursor:pointer;}
+button:focus-visible, a:focus-visible, input:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+/* ---------- header ---------- */
+header{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:20;
+  background:rgba(10,10,12,.92); backdrop-filter:blur(6px);
+  margin:0 -16px; padding:14px 16px 12px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.brand{display:flex; flex-direction:column; gap:2px; min-width:0;}
+.brand-mark{
+  font-family:'JetBrains Mono',monospace; font-weight:800; font-size:19px;
+  letter-spacing:.04em; text-transform:uppercase; white-space:nowrap;
+  position:relative; display:inline-block;
+}
+.brand-mark::after{content:"KURA_SHOP";}
+.brand-mark{color:var(--fg);}
+.brand-glitch{
+  animation:glitch-in 1.1s steps(2,end) 1;
+}
+@keyframes glitch-in{
+  0%{clip-path:inset(0 0 90% 0); transform:translate(-2px,0);}
+  20%{clip-path:inset(40% 0 20% 0); transform:translate(2px,0); color:var(--accent);}
+  40%{clip-path:inset(10% 0 70% 0); transform:translate(-1px,0);}
+  60%{clip-path:inset(60% 0 5% 0); transform:translate(1px,0); color:var(--accent);}
+  80%{clip-path:inset(0 0 0 0); transform:translate(0,0);}
+  100%{clip-path:inset(0 0 0 0); transform:translate(0,0); color:var(--fg);}
+}
+.brand-sub{font-size:10.5px; color:var(--fg-dim); letter-spacing:.14em; text-transform:uppercase;}
+.brand-sub .dot{color:var(--accent);}
+
+.cart-btn{
+  position:relative; display:flex; align-items:center; gap:7px;
+  background:var(--surface); border:1px solid var(--border); border-radius:3px;
+  padding:9px 12px; color:var(--fg); font-size:12px;
+}
+.cart-btn:active{border-color:var(--accent);}
+.cart-count{
+  position:absolute; top:-7px; right:-7px; background:var(--accent); color:#04120b;
+  font-size:10px; font-weight:800; line-height:1; border-radius:50%;
+  min-width:18px; height:18px; display:flex; align-items:center; justify-content:center;
+  padding:0 2px;
+}
+
+/* ---------- hero / boot readout ---------- */
+.hero{padding:22px 0 18px; border-bottom:1px solid var(--border); margin-bottom:18px;}
+.hero-tag{
+  font-size:11px; color:var(--accent); letter-spacing:.18em; text-transform:uppercase;
+  margin-bottom:10px; display:flex; align-items:center; gap:8px;
+}
+.hero-tag .blink{animation:blink 1.1s steps(1) infinite;}
+@keyframes blink{50%{opacity:0;}}
+.hero h1{
+  font-family:'JetBrains Mono',monospace; font-weight:800; font-size:clamp(26px,7vw,34px);
+  line-height:1.08; margin:0 0 10px; text-wrap:balance; letter-spacing:-.01em;
+}
+.hero h1 span{color:var(--accent);}
+.hero p{margin:0; color:var(--fg-dim); font-size:13.5px; max-width:46ch; line-height:1.55;}
+.hero-stats{
+  display:flex; gap:18px; margin-top:16px; flex-wrap:wrap;
+}
+.hero-stat{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--fg-dim);}
+.hero-stat b{display:block; color:var(--fg); font-size:15px; font-weight:700;}
+
+/* ---------- filters ---------- */
+.filters{display:flex; gap:8px; overflow-x:auto; padding-bottom:16px; margin-bottom:4px; scrollbar-width:none;}
+.filters::-webkit-scrollbar{display:none;}
+.chip{
+  flex:0 0 auto; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em;
+  text-transform:uppercase; padding:8px 13px; border-radius:3px; border:1px solid var(--border);
+  background:var(--surface); color:var(--fg-dim); white-space:nowrap;
+}
+.chip[aria-pressed="true"]{border-color:var(--accent); color:var(--accent); background:var(--accent-dim);}
+
+/* ---------- product grid ---------- */
+.grid{
+  display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding-bottom:28px;
+}
+@media (min-width:560px){ .grid{grid-template-columns:repeat(3,1fr);} }
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:4px; overflow:hidden;
+  display:flex; flex-direction:column; text-align:left; width:100%; padding:0;
+  min-width:0; transition:border-color .15s ease;
+}
+.card:active{border-color:var(--accent);}
+.card-media{
+  aspect-ratio:1/1; width:100%; position:relative; overflow:hidden;
+  background:
+    repeating-linear-gradient(135deg, rgba(0,255,140,.07) 0 2px, transparent 2px 14px),
+    linear-gradient(160deg, var(--surface-2), #0d0d10);
+  display:flex; align-items:center; justify-content:center;
+}
+.card-glyph{
+  font-family:'JetBrains Mono',monospace; font-weight:800; font-size:30px; color:var(--border);
+  letter-spacing:-.02em;
+}
+.card-photo{width:100%; height:100%; object-fit:cover; display:block;}
+.card-demo{
+  position:absolute; top:6px; left:6px; font-family:'JetBrains Mono',monospace; font-size:8.5px;
+  letter-spacing:.08em; color:#04120b; background:var(--accent); padding:2px 5px; border-radius:2px;
+  text-transform:uppercase;
+}
+.card-body{padding:10px 11px 12px; display:flex; flex-direction:column; gap:6px; min-width:0;}
+.card-cat{font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--fg-dim); letter-spacing:.1em; text-transform:uppercase;}
+.card-name{font-size:13px; font-weight:600; line-height:1.3;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+.card-row{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:2px;}
+.card-price{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13.5px;}
+.card-add{
+  background:transparent; border:1px solid var(--border); color:var(--fg);
+  border-radius:3px; width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+  font-size:16px; line-height:1; flex:0 0 auto;
+}
+.card-add:active{border-color:var(--accent); color:var(--accent);}
+
+footer{border-top:1px solid var(--border); padding:18px 0 28px; margin-top:6px;}
+footer p{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--fg-dim); line-height:1.7; letter-spacing:.02em;}
+footer .path{color:var(--accent);}
+
+/* ---------- overlay + drawers ---------- */
+.overlay{
+  position:fixed; inset:0; background:rgba(5,5,6,.72); z-index:50;
+  opacity:0; pointer-events:none; transition:opacity .18s ease;
+}
+.overlay.open{opacity:1; pointer-events:auto;}
+
+.sheet{
+  position:fixed; left:0; right:0; bottom:0; z-index:51; background:var(--surface);
+  border-top:1px solid var(--border); border-radius:12px 12px 0 0;
+  max-height:88vh; display:flex; flex-direction:column;
+  transform:translateY(100%); transition:transform .22s cubic-bezier(.32,.72,0,1);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.sheet.open{transform:translateY(0);}
+.sheet-handle{width:36px; height:4px; background:var(--border); border-radius:2px; margin:10px auto 2px;}
+.sheet-head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:10px 16px 12px; border-bottom:1px solid var(--border);
+}
+.sheet-title{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px; letter-spacing:.05em; text-transform:uppercase;}
+.sheet-close{background:none; border:none; color:var(--fg-dim); font-size:20px; line-height:1; padding:4px;}
+.sheet-body{overflow-y:auto; padding:16px; min-width:0;}
+
+/* product detail */
+.pd-media{
+  aspect-ratio:4/3; border-radius:6px; overflow:hidden; margin-bottom:16px;
+  background:repeating-linear-gradient(135deg, rgba(0,255,140,.07) 0 2px, transparent 2px 14px),
+    linear-gradient(160deg, var(--surface-2), #0d0d10);
+  display:flex; align-items:center; justify-content:center; position:relative;
+}
+.pd-glyph{font-family:'JetBrains Mono',monospace; font-weight:800; font-size:48px; color:var(--border);}
+.pd-photo{width:100%; height:100%; object-fit:cover; display:block;}
+.pd-cat{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--accent); letter-spacing:.12em; text-transform:uppercase; margin-bottom:6px;}
+.pd-name{font-size:19px; font-weight:700; margin:0 0 8px; text-wrap:balance;}
+.pd-price{font-family:'JetBrains Mono',monospace; font-weight:800; font-size:20px; margin-bottom:14px;}
+.pd-desc{font-size:13.5px; color:var(--fg-dim); line-height:1.65; margin-bottom:18px;}
+.pd-desc .flag{color:var(--accent); font-family:'JetBrains Mono',monospace; font-size:11px; display:block; margin-bottom:6px; letter-spacing:.04em;}
+.qty-row{display:flex; align-items:center; gap:14px; margin-bottom:18px;}
+.qty-label{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--fg-dim); text-transform:uppercase; letter-spacing:.08em;}
+.qty-ctrl{display:flex; align-items:center; border:1px solid var(--border); border-radius:4px; overflow:hidden;}
+.qty-ctrl button{background:var(--surface-2); border:none; color:var(--fg); width:34px; height:34px; font-size:16px;}
+.qty-ctrl span{width:34px; text-align:center; font-family:'JetBrains Mono',monospace; font-weight:700;}
+.btn-main{
+  width:100%; background:var(--accent); color:#04120b; border:none; border-radius:4px;
+  font-family:'JetBrains Mono',monospace; font-weight:800; font-size:13px; letter-spacing:.05em;
+  text-transform:uppercase; padding:14px; display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn-main:active{filter:brightness(.92);}
+.btn-ghost{
+  width:100%; background:transparent; border:1px solid var(--border); color:var(--fg);
+  border-radius:4px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px;
+  letter-spacing:.05em; text-transform:uppercase; padding:12px; margin-top:8px;
+}
+
+/* cart */
+.cart-item{display:flex; gap:10px; padding:12px 0; border-bottom:1px solid var(--border);}
+.cart-item:last-child{border-bottom:none;}
+.cart-thumb{
+  width:52px; height:52px; border-radius:4px; flex:0 0 auto;
+  background:linear-gradient(160deg, var(--surface-2), #0d0d10);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono',monospace; font-weight:800; color:var(--border); font-size:16px;
+}
+.cart-info{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;}
+.cart-info .nm{font-size:13px; font-weight:600; line-height:1.3;}
+.cart-info .cat{font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--fg-dim); text-transform:uppercase; letter-spacing:.08em;}
+.cart-info .row{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:4px;}
+.mini-qty{display:flex; align-items:center; border:1px solid var(--border); border-radius:3px;}
+.mini-qty button{background:none; border:none; color:var(--fg); width:24px; height:24px; font-size:13px;}
+.mini-qty span{width:22px; text-align:center; font-size:12px; font-family:'JetBrains Mono',monospace;}
+.cart-price{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px;}
+.cart-remove{background:none; border:none; color:var(--fg-dim); font-size:11px; font-family:'JetBrains Mono',monospace; text-decoration:underline; padding:0;}
+.cart-empty{padding:30px 0; text-align:center; color:var(--fg-dim); font-size:13px;}
+.cart-empty .mono{display:block; color:var(--border); font-size:30px; margin-bottom:10px;}
+
+.cart-summary{border-top:1px solid var(--border); padding-top:14px; margin-top:4px;}
+.sum-row{display:flex; justify-content:space-between; font-size:12.5px; color:var(--fg-dim); margin-bottom:6px;}
+.sum-row.total{color:var(--fg); font-weight:700; font-size:15px; font-family:'JetBrains Mono',monospace; margin:10px 0 16px;}
+
+.pay-box{background:var(--surface-2); border:1px solid var(--border); border-radius:4px; padding:12px; margin-bottom:16px;}
+.pay-box-head{font-size:10px; color:var(--accent); letter-spacing:.08em; margin-bottom:6px; font-family:'JetBrains Mono',monospace; text-transform:uppercase;}
+.pay-note{font-size:11px; color:var(--fg-dim); line-height:1.5; margin:0;}
+
+/* floating bottom bar */
+.float-bar{
+  position:fixed; left:16px; right:16px; bottom:16px; z-index:19;
+  background:var(--surface); border:1px solid var(--accent); border-radius:6px;
+  padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+  transform:translateY(140%); transition:transform .22s cubic-bezier(.32,.72,0,1);
+  padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  margin-bottom:env(safe-area-inset-bottom,0px);
+}
+.float-bar.show{transform:translateY(0);}
+.float-bar .fb-info{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--fg-dim);}
+.float-bar .fb-info b{display:block; color:var(--fg); font-size:15px;}
+.float-bar button{
+  background:var(--accent); color:#04120b; border:none; border-radius:4px; padding:10px 16px;
+  font-family:'JetBrains Mono',monospace; font-weight:800; font-size:11.5px; letter-spacing:.05em; text-transform:uppercase;
+}
+
+/* toast */
+.toast{
+  position:fixed; left:50%; bottom:90px; transform:translate(-50%,10px); z-index:60;
+  background:var(--fg); color:var(--bg); font-family:'JetBrains Mono',monospace; font-size:11.5px;
+  padding:9px 14px; border-radius:4px; opacity:0; transition:opacity .18s ease, transform .18s ease; white-space:nowrap;
+}
+.toast.show{opacity:1; transform:translate(-50%,0);}
+
+@media (prefers-reduced-motion: reduce){
+  .brand-glitch, .hero-tag .blink{animation:none;}
+  .sheet, .overlay, .float-bar, .toast{transition:none;}
+}
+</style>
+
+<div class="scanlines"></div>
+<div class="grain"></div>
+
+<header>
+  <div class="brand">
+    <span class="brand-mark brand-glitch"></span>
+    <span class="brand-sub">boutique<span class="dot">_</span>telegram<span class="dot">//</span>v1.0</span>
+  </div>
+  <button class="cart-btn mono" id="openCartBtn" aria-label="Ouvrir le panier">
+    PANIER
+    <span class="cart-count" id="cartCount" hidden>0</span>
+  </button>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-tag"><span class="blink">●</span> SESSION ACTIVE — ACCÈS AUTORISÉ</div>
+    <h1>Le drop est <span>ouvert</span>.</h1>
+    <p>Catalogue chiffré, livraison discrète. Parcourez les pièces disponibles et commandez directement depuis Telegram.</p>
+    <div class="hero-stats mono">
+      <div class="hero-stat">RÉFÉRENCES<b id="statCount">0</b></div>
+      <div class="hero-stat">STATUT<b style="color:var(--accent)">ONLINE</b></div>
+      <div class="hero-stat">PAIEMENT<b style="color:var(--accent)">RÈGLEMENT EN CRYPTO</b></div>
+    </div>
+  </section>
+
+  <nav class="filters" id="filters"></nav>
+
+  <section class="grid" id="grid"></section>
+
+  <footer>
+    <p>
+      <span class="path">root@kura:~$</span> cat catalogue.json<br>
+      Les fiches ci-dessus sont des <b>exemples de démonstration</b> — remplacez-les
+      par vos propres produits dans le code source (tableau <code>PRODUCTS</code>).<br>
+      <span class="path">root@kura:~$</span> _
+    </p>
+  </footer>
+</main>
+
+<div class="float-bar" id="floatBar">
+  <div class="fb-info">SOUS-TOTAL<b class="tabular" id="fbTotal">0,00 €</b></div>
+  <button id="floatCartBtn">VOIR LE PANIER</button>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- product detail sheet -->
+<section class="sheet" id="pdSheet" aria-hidden="true">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <span class="sheet-title mono">FICHE PRODUIT</span>
+    <button class="sheet-close" id="pdClose" aria-label="Fermer">&times;</button>
+  </div>
+  <div class="sheet-body" id="pdBody"></div>
+</section>
+
+<!-- cart sheet -->
+<section class="sheet" id="cartSheet" aria-hidden="true">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <span class="sheet-title mono">PANIER</span>
+    <button class="sheet-close" id="cartClose" aria-label="Fermer">&times;</button>
+  </div>
+  <div class="sheet-body" id="cartBody"></div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     PRODUITS — modifiez ce tableau pour ajouter vos vrais articles.
+     Champs : id, nom, prix (nombre, EUR), categorie, glyph (1-2
+     lettres affichées en vignette tant qu'il n'y a pas de photo),
+     desc (texte de la fiche produit), demo (true tant que c'est un
+     exemple — passez à false, ou supprimez le champ, une fois le
+     vrai produit renseigné).
+     Les catégories affichées en filtre sont déduites automatiquement
+     de ce tableau : il suffit de changer le champ "categorie".
+  ============================================================= */
+  // Astuce image : un lien direct vers un .jpg/.png/.webp fonctionne
+  // (par exemple une image hébergée sur imgur.com ou dans votre propre
+  // dépôt GitHub Pages, à côté de ce fichier). Laissez image vide ("")
+  // pour garder le pictogramme de remplacement.
+  const PRODUCTS = [
+    { id:"p1", nom:"Produit TECH exemple",    prix:49.00, categorie:"Tech",    glyph:"01", demo:true, image:"",
+      desc:"Remplacez cette fiche par un vrai produit Tech (accessoire, gadget, périphérique...)." },
+    { id:"p2", nom:"Produit TECH exemple 2",  prix:29.00, categorie:"Tech",    glyph:"02", demo:true, image:"",
+      desc:"Deuxième exemple de la catégorie Tech, à remplacer par votre propre article." },
+    { id:"p3", nom:"Pass DROP DIGITAL",       prix:15.00, categorie:"Digital", glyph:"03", demo:true, image:"",
+      desc:"Accès anticipé 24h à chaque nouveau drop + salon Telegram privé. Livré par message après commande." },
+    { id:"p4", nom:"Produit DIGITAL exemple", prix:9.00,  categorie:"Digital", glyph:"04", demo:true, image:"",
+      desc:"Remplacez cette fiche par votre propre produit numérique (code, accès, service...)." },
+  ];
+
+  /* Nom d'utilisateur de votre bot Telegram, sans le @ — utilisé
+     uniquement pour le bouton de secours si l'app n'est pas ouverte
+     depuis Telegram. Changez-le une fois votre bot créé. */
+  const BOT_USERNAME = "KURA_BOT";
+
+  /* Le règlement en crypto (création de facture + conversion EUR -> crypto
+     + confirmation automatique du paiement) est géré côté bot, pas ici —
+     une page web ne peut jamais contenir de clé API. Voir bot.py : il
+     reçoit la commande envoyée plus bas par checkout(), crée une facture
+     via l'API Crypto Pay, et confirme au client quand elle est payée. */
+
+  /* ============================================================ */
+
+  const fmt = n => n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) + " €";
+  const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+  if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
+
+  let cart = {};
+  try {
+    const saved = localStorage.getItem('kura_cart');
+    if (saved) cart = JSON.parse(saved) || {};
+  } catch(e){ cart = {}; }
+
+  function saveCart(){
+    try { localStorage.setItem('kura_cart', JSON.stringify(cart)); } catch(e){}
+  }
+
+  let activeFilter = "Tout";
+  let activeProductId = null;
+
+  const grid = document.getElementById('grid');
+  const filtersEl = document.getElementById('filters');
+  const statCount = document.getElementById('statCount');
+
+  function categories(){
+    const set = new Set(PRODUCTS.map(p => p.categorie));
+    return ["Tout", ...Array.from(set)];
+  }
+
+  function renderFilters(){
+    filtersEl.innerHTML = "";
+    categories().forEach(cat => {
+      const b = document.createElement('button');
+      b.className = 'chip mono';
+      b.textContent = cat;
+      b.setAttribute('aria-pressed', String(cat === activeFilter));
+      b.addEventListener('click', () => { activeFilter = cat; renderFilters(); renderGrid(); });
+      filtersEl.appendChild(b);
+    });
+  }
+
+  function renderGrid(){
+    const list = PRODUCTS.filter(p => activeFilter === "Tout" || p.categorie === activeFilter);
+    grid.innerHTML = "";
+    list.forEach(p => {
+      const card = document.createElement('button');
+      card.className = 'card';
+      card.innerHTML = `
+        <span class="card-media">
+          ${p.demo ? '<span class="card-demo">exemple</span>' : ''}
+          ${p.image ? `<img class="card-photo" src="${p.image}" alt="${p.nom}" loading="lazy">` : `<span class="card-glyph mono">${p.glyph}</span>`}
+        </span>
+        <span class="card-body">
+          <span class="card-cat mono">${p.categorie}</span>
+          <span class="card-name">${p.nom}</span>
+          <span class="card-row">
+            <span class="card-price tabular">${fmt(p.prix)}</span>
+            <span class="card-add" aria-label="Ajouter au panier">+</span>
+          </span>
+        </span>`;
+      card.addEventListener('click', (e) => openProduct(p.id));
+      grid.appendChild(card);
+    });
+    statCount.textContent = String(PRODUCTS.length).padStart(2,'0');
+  }
+
+  /* ---------- product detail sheet ---------- */
+  const pdSheet = document.getElementById('pdSheet');
+  const pdBody = document.getElementById('pdBody');
+  const overlay = document.getElementById('overlay');
+  let pdQty = 1;
+
+  function openProduct(id){
+    const p = PRODUCTS.find(x => x.id === id);
+    if (!p) return;
+    activeProductId = id;
+    pdQty = 1;
+    renderProductDetail(p);
+    openSheet(pdSheet);
+  }
+
+  function renderProductDetail(p){
+    pdBody.innerHTML = `
+      <div class="pd-media">${p.image ? `<img class="pd-photo" src="${p.image}" alt="${p.nom}">` : `<span class="pd-glyph mono">${p.glyph}</span>`}</div>
+      <div class="pd-cat mono">${p.categorie}</div>
+      <h2 class="pd-name">${p.nom}</h2>
+      <div class="pd-price tabular">${fmt(p.prix)}</div>
+      <p class="pd-desc">${p.demo ? '<span class="flag mono">// FICHE EXEMPLE — à remplacer</span>' : ''}${p.desc}</p>
+      <div class="qty-row">
+        <span class="qty-label">Quantité</span>
+        <span class="qty-ctrl">
+          <button id="pdMinus" aria-label="Diminuer">–</button>
+          <span id="pdQty" class="tabular">${pdQty}</span>
+          <button id="pdPlus" aria-label="Augmenter">+</button>
+        </span>
+      </div>
+      <button class="btn-main" id="pdAdd">Ajouter au panier · <span class="tabular" id="pdAddTotal">${fmt(p.prix)}</span></button>
+    `;
+    document.getElementById('pdMinus').addEventListener('click', () => {
+      pdQty = Math.max(1, pdQty - 1); syncPdQty(p);
+    });
+    document.getElementById('pdPlus').addEventListener('click', () => {
+      pdQty = Math.min(99, pdQty + 1); syncPdQty(p);
+    });
+    document.getElementById('pdAdd').addEventListener('click', () => {
+      addToCart(p.id, pdQty);
+      closeSheet(pdSheet);
+      showToast(`${p.nom} ajouté × ${pdQty}`);
+    });
+  }
+  function syncPdQty(p){
+    document.getElementById('pdQty').textContent = pdQty;
+    document.getElementById('pdAddTotal').textContent = fmt(p.prix * pdQty);
+  }
+
+  /* ---------- cart logic ---------- */
+  function addToCart(id, qty){
+    cart[id] = (cart[id] || 0) + qty;
+    saveCart();
+    updateCartChrome();
+  }
+  function setQty(id, qty){
+    if (qty <= 0) { delete cart[id]; } else { cart[id] = qty; }
+    saveCart();
+    updateCartChrome();
+    renderCart();
+  }
+  function cartLines(){
+    return Object.entries(cart)
+      .map(([id, qty]) => ({ p: PRODUCTS.find(x => x.id === id), qty }))
+      .filter(l => l.p && l.qty > 0);
+  }
+  function cartTotal(){
+    return cartLines().reduce((sum, l) => sum + l.p.prix * l.qty, 0);
+  }
+  function cartCount(){
+    return cartLines().reduce((sum, l) => sum + l.qty, 0);
+  }
+
+  const cartCountEl = document.getElementById('cartCount');
+  const floatBar = document.getElementById('floatBar');
+  const fbTotal = document.getElementById('fbTotal');
+
+  function updateCartChrome(){
+    const n = cartCount();
+    if (n > 0) {
+      cartCountEl.hidden = false;
+      cartCountEl.textContent = n > 99 ? '99+' : n;
+      floatBar.classList.add('show');
+      fbTotal.textContent = fmt(cartTotal());
+    } else {
+      cartCountEl.hidden = true;
+      floatBar.classList.remove('show');
+    }
+  }
+
+  const cartSheet = document.getElementById('cartSheet');
+  const cartBody = document.getElementById('cartBody');
+
+  function renderCart(){
+    const lines = cartLines();
+    if (lines.length === 0){
+      cartBody.innerHTML = `
+        <div class="cart-empty">
+          <span class="mono">∅</span>
+          Panier vide.<br>Ajoutez une référence du catalogue.
+        </div>`;
+      return;
+    }
+    const itemsHtml = lines.map(l => `
+      <div class="cart-item" data-id="${l.p.id}">
+        <div class="cart-thumb mono">${l.p.glyph}</div>
+        <div class="cart-info">
+          <span class="nm">${l.p.nom}</span>
+          <span class="cat mono">${l.p.categorie}</span>
+          <div class="row">
+            <span class="mini-qty">
+              <button class="mq-minus" aria-label="Diminuer">–</button>
+              <span class="tabular">${l.qty}</span>
+              <button class="mq-plus" aria-label="Augmenter">+</button>
+            </span>
+            <span class="cart-price tabular">${fmt(l.p.prix * l.qty)}</span>
+          </div>
+          <button class="cart-remove">retirer</button>
+        </div>
+      </div>
+    `).join("");
+
+    cartBody.innerHTML = itemsHtml + `
+      <div class="cart-summary">
+        <div class="sum-row"><span>Articles</span><span class="tabular">${cartCount()}</span></div>
+        <div class="sum-row total"><span>Total</span><span class="tabular">${fmt(cartTotal())}</span></div>
+        <div class="pay-box">
+          <div class="pay-box-head mono">RÈGLEMENT EN CRYPTO</div>
+          <p class="pay-note">Le montant ci-dessus est indiqué en euros. À l'étape suivante, le bot génère une facture et calcule automatiquement l'équivalent en crypto au cours du jour.</p>
+        </div>
+        <button class="btn-main" id="checkoutBtn">Payer</button>
+        <button class="btn-ghost" id="clearCartBtn">Vider le panier</button>
+      </div>
+    `;
+
+    cartBody.querySelectorAll('.cart-item').forEach(row => {
+      const id = row.getAttribute('data-id');
+      const line = lines.find(l => l.p.id === id);
+      row.querySelector('.mq-minus').addEventListener('click', () => setQty(id, line.qty - 1));
+      row.querySelector('.mq-plus').addEventListener('click', () => setQty(id, line.qty + 1));
+      row.querySelector('.cart-remove').addEventListener('click', () => setQty(id, 0));
+    });
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    if (checkoutBtn) checkoutBtn.addEventListener('click', checkout);
+    const clearBtn = document.getElementById('clearCartBtn');
+    if (clearBtn) clearBtn.addEventListener('click', () => { cart = {}; saveCart(); updateCartChrome(); renderCart(); });
+  }
+
+  function checkout(){
+    const lines = cartLines();
+    if (lines.length === 0) return;
+    const summary = lines.map(l => `${l.qty}× ${l.p.nom} (${fmt(l.p.prix * l.qty)})`).join("\n");
+    const total = fmt(cartTotal());
+    const message = `Nouvelle commande KURA SHOP\n${summary}\nTotal: ${total}`;
+
+    if (tg && typeof tg.sendData === 'function'){
+      try {
+        tg.sendData(JSON.stringify({ order: lines.map(l => ({ id: l.p.id, nom: l.p.nom, qty: l.qty, prix: l.p.prix })), total: cartTotal() }));
+        showToast("Commande envoyée au bot ✓");
+        return;
+      } catch(e){}
+    }
+    // Secours hors Telegram : copie le récapitulatif et ouvre le bot
+    try { navigator.clipboard.writeText(message); } catch(e){}
+    showToast("Récap copié — ouvrez @" + BOT_USERNAME);
+    window.open("https://t.me/" + BOT_USERNAME, "_blank");
+  }
+
+  /* ---------- sheets / overlay ---------- */
+  function openSheet(sheet){
+    overlay.classList.add('open');
+    sheet.classList.add('open');
+    sheet.setAttribute('aria-hidden','false');
+  }
+  function closeSheet(sheet){
+    sheet.classList.remove('open');
+    sheet.setAttribute('aria-hidden','true');
+    if (!pdSheet.classList.contains('open') && !cartSheet.classList.contains('open')){
+      overlay.classList.remove('open');
+    }
+  }
+  overlay.addEventListener('click', () => { closeSheet(pdSheet); closeSheet(cartSheet); });
+  document.getElementById('pdClose').addEventListener('click', () => closeSheet(pdSheet));
+  document.getElementById('cartClose').addEventListener('click', () => closeSheet(cartSheet));
+
+  function openCart(){ renderCart(); openSheet(cartSheet); }
+  document.getElementById('openCartBtn').addEventListener('click', openCart);
+  document.getElementById('floatCartBtn').addEventListener('click', openCart);
+
+  /* ---------- toast ---------- */
+  let toastTimer = null;
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  /* ---------- init ---------- */
+  renderFilters();
+  renderGrid();
+  updateCartChrome();
+})();
+</script>
